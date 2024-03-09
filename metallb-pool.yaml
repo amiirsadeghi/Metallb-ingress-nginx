@@ -1,0 +1,8 @@
+apiVersion: metallb.io/vlbetal
+kind: IPAddressPool
+metadata:
+  name: first-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 192.168.135.130-192.168.135.131
