@@ -1,10 +1,22 @@
-install and congifute nginx ingres controller with metalllb loadbalancer
+install and congifute nginx ingres controller with metalllb loadbalancer step by step
 ------------------------------------------------------------------------------
-first install metallb by manifest with this comment 
+step 1
+install metallb by manifest with this comment 
 kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.3/config/manifests/metallb-native.yaml or apply metallb.yaml
 ------------------------------------------------------------------------------
+step 2
 give a pool of ip to metallb 
 apply metallb-pool.yaml
 ------------------------------------------------------------------------------
+step 3
 announce those ip to metalllb
 apply metallb-announce.yaml
+------------------------------------------------------------------------------
+step 4
+install nginx ingress controller
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.3.0/deploy/static/provider/cloud/deploy.yaml or apply nginx-ingress.yaml
+------------------------------------------------------------------------------
+step 5
+create ingress object for service 
+you can see an example in example.yaml
+------------------------------------------------------------------------------
