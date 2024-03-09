@@ -1,0 +1,6 @@
+apiVersion: metallb.io/vlbetal
+kind: L2Advertisement
+metadata:
+   name: example
+   namespace: metallb-system
+   
