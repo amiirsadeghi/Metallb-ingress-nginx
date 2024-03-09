@@ -1,4 +1,4 @@
-install and congifute nginx ingres controller with metalllb loadbalancer step by step
+install and congifute nginx ingress controller with metalllb loadbalancer step by step
 ------------------------------------------------------------------------------
 step 1
 install metallb by manifest with this comment 
