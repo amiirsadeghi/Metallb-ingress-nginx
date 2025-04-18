@@ -25,7 +25,7 @@ In this project, we demonstrate how to set up a bare-metal Kubernetes cluster wi
 - **NGINX Ingress Controller**: Routes HTTP traffic to backend services using host and path rules.
 - **Demo Application**: A simple HTTP echo service defined in `apps/demo-app.yaml`, exposed via Ingress.
 
-## Files Description
+## Files 📄 Description
 
 ### `metallb/metallb-native.yaml`
 Deploys MetalLB in native mode. MetalLB uses this manifest to create its controller and speaker components.
