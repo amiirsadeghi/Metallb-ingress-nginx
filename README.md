@@ -1,126 +1,129 @@
 
 # Metallb + Ingress NGINX Setup
 
+## Project Tree
+
+```bash
+.
+├── metallb
+│   ├── metallb-native.yaml
+│   ├── metallb-ippool.yaml
+│   └── metallb-L2Advertisement.yaml
+├── ingress-nginx
+│   └── deploy.yaml
+├── apps
+│   └── demo-app.yaml
+└── README.md
+```
+
 ## Scenario Overview
 
-In this project, we set up a Kubernetes cluster with MetalLB and the NGINX Ingress Controller to handle HTTP traffic and route it to backend services. The goal is to replicate the behavior of a load balancer using MetalLB to manage traffic between external clients and services running inside a Kubernetes cluster.
+In this project, we demonstrate how to set up a bare-metal Kubernetes cluster with **MetalLB** as a software load balancer and **NGINX Ingress Controller** to handle HTTP routing. This setup allows external clients to access multiple services via a single Virtual IP (VIP) provided by MetalLB and routed by NGINX based on host headers.
 
-### Key Concepts:
-- **MetalLB**: A software load balancer for Kubernetes that allows us to expose services on a virtual IP (VIP) that can be accessed externally.
-- **NGINX Ingress Controller**: A component that handles HTTP(S) routing inside the cluster, using the host headers in HTTP requests to forward traffic to the appropriate services.
+### Key Components
+- **MetalLB (Native Mode)**: Provides external load balancing by assigning VIPs to Kubernetes services.
+- **NGINX Ingress Controller**: Routes HTTP traffic to backend services using host and path rules.
+- **Demo Application**: A simple HTTP echo service defined in `apps/demo-app.yaml`, exposed via Ingress.
 
-## Components of the Setup:
-1. **MetalLB**: Provides external access to services within the Kubernetes cluster using a VIP.
-2. **NGINX Ingress Controller**: Handles routing based on HTTP headers, allowing multiple services to share the same VIP.
-3. **Test Application**: A simple HTTP application exposed via NGINX Ingress to demonstrate the setup.
+## Files Description
 
-### Project Steps:
-1. **Install MetalLB**: MetalLB was installed to provide a load balancer functionality within the Kubernetes cluster.
-2. **Install NGINX Ingress Controller**: The NGINX Ingress Controller was set up to manage routing to different services based on HTTP host headers.
-3. **Create a Test Application**: A simple "Hello World" HTTP service was deployed in the cluster. This service is exposed via a Kubernetes service and accessible externally via NGINX Ingress.
-
----
-
-## Files
-
-### 1. `metallb-native.yaml`
-This file installs the **MetalLB Native** load balancer, enabling external access to Kubernetes services. It includes the necessary configuration to deploy MetalLB using the **native mode**. In this mode, MetalLB uses a range of IP addresses to assign to services that need external access.
-
-To install MetalLB, apply the following command:
+### `metallb/metallb-native.yaml`
+Deploys MetalLB in native mode. MetalLB uses this manifest to create its controller and speaker components.
 
 ```bash
-kubectl apply -f metallb-native.yaml
+kubectl apply -f metallb/metallb-native.yaml
 ```
 
-This will create the necessary MetalLB components in your cluster.
+### `metallb/metallb-ippool.yaml`
+Defines the IP address pool from which MetalLB will allocate VIPs.
 
-### 2. `metallb-ippool.yaml`
-This file defines an IP Address Pool for MetalLB to assign IPs from the range `192.168.32.51-192.168.32.100`. It also enables automatic IP assignment.
+```yaml
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: metallb-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - 192.168.32.51-192.168.32.100
+  autoAssign: true
+```
 
-To apply the IP pool configuration:
+Apply with:
 
 ```bash
-kubectl apply -f metallb-ippool.yaml
+kubectl apply -f metallb/metallb-ippool.yaml
 ```
 
-### 3. `metallb-L2Advertisement.yaml`
-Defines the L2Advertisement configuration for MetalLB, allowing the VIP to be advertised to the external network.
-
-To apply the L2Advertisement configuration:
+### `metallb/metallb-L2Advertisement.yaml`
+Configures Layer 2 advertisement, allowing MetalLB to announce the VIPs on the local network.
 
 ```bash
-kubectl apply -f metallb-L2Advertisement.yaml
+kubectl apply -f metallb/metallb-L2Advertisement.yaml
 ```
 
-### 4. `demo-app.yaml`
-This file contains the **Deployment**, **Service**, and **Ingress** resources for a simple HTTP application. The application is exposed using the NGINX Ingress Controller, which handles traffic routed through MetalLB's VIP.
-
-To deploy the test application:
+### `ingress-nginx/deploy.yaml`
+Contains the Deployment and Service for the NGINX Ingress Controller with `type: LoadBalancer`, enabling MetalLB to assign a VIP.
 
 ```bash
-kubectl apply -f demo-app.yaml
+kubectl apply -f ingress-nginx/deploy.yaml
 ```
 
-### 5. `web-service.yaml`
-This file defines a Kubernetes Service that exposes the web application on port 80 and forwards traffic to the container's port 5678.
+### `apps/demo-app.yaml`
+Defines a demo application (Deployment, Service, and Ingress) that responds with a simple message. The Ingress resource maps `web.local` to this service.
 
-### 6. `web-ingress.yaml`
-This file defines an Ingress resource that uses the NGINX Ingress Controller to route traffic to the web service based on the hostname `web.local`.
-
----
+```bash
+kubectl apply -f apps/demo-app.yaml
+```
 
 ## Step-by-Step Setup
 
-### Step 1: Install MetalLB
-1. Download the `metallb-native.yaml` file and apply it to your Kubernetes cluster:
+1. **Install MetalLB (Native Mode)**
+   ```bash
+   kubectl apply -f metallb/metallb-native.yaml
+   ```
 
-    ```bash
-    kubectl apply -f metallb-native.yaml
-    ```
+2. **Configure IP Pool**
+   ```bash
+   kubectl apply -f metallb/metallb-ippool.yaml
+   ```
 
-2. Apply the IP Address Pool configuration:
+3. **Enable L2 Advertisement**
+   ```bash
+   kubectl apply -f metallb/metallb-L2Advertisement.yaml
+   ```
 
-    ```bash
-    kubectl apply -f metallb-ippool.yaml
-    ```
+4. **Deploy NGINX Ingress Controller**
+   ```bash
+   kubectl apply -f ingress-nginx/deploy.yaml
+   ```
 
-3. Apply the L2Advertisement configuration:
+5. **Deploy the Demo Application**
+   ```bash
+   kubectl apply -f apps/demo-app.yaml
+   ```
 
-    ```bash
-    kubectl apply -f metallb-L2Advertisement.yaml
-    ```
+6. **Test the Application**
+   - Retrieve the VIP assigned to the Ingress Controller:
+     ```bash
+     kubectl get svc -n ingress-nginx
+     ```
+   - Map the hostname in your `/etc/hosts` (or Windows hosts file):
+     ```
+     <VIP> web.local
+     ```
+   - Test with curl or browser:
+     ```bash
+     curl http://web.local
+     ```
 
-### Step 2: Install NGINX Ingress Controller
-1. Deploy the NGINX Ingress Controller using the `ingress-nginx` official Helm chart or using a YAML manifest (if you haven't already).
-
-    Example for installing via Helm:
-    ```bash
-    helm install nginx-ingress ingress-nginx/ingress-nginx
-    ```
-
-    Alternatively, you can apply the deployment YAML if you're using a manual approach.
-
-### Step 3: Deploy Test Application
-1. Apply the `demo-app.yaml` file to create the web service:
-
-    ```bash
-    kubectl apply -f demo-app.yaml
-    ```
-
-### Step 4: Test the Setup
-1. Ensure that MetalLB has assigned a VIP and that it is accessible externally.
-2. Access the test application using the VIP and the domain `web.local`.
-
----
+   You should see the demo application's response (e.g., "hello").
 
 ## Conclusion
 
-This setup demonstrates the power of combining MetalLB with NGINX Ingress Controller to provide load balancing and HTTP routing inside a Kubernetes cluster. By leveraging MetalLB, we were able to expose services externally on a Virtual IP (VIP), and using the NGINX Ingress Controller, we were able to route HTTP traffic based on the host header to different services within the cluster.
+This repository provides a complete example of leveraging **MetalLB** and **NGINX Ingress Controller** to expose services in a bare-metal Kubernetes cluster. You can extend this setup by adding more services and Ingress rules under the `apps/` directory.
 
 ---
 
-## GitHub Repository
+Feel free to raise issues or contribute improvements!
 
-You can find the project files on GitHub:
-
-[Metallb-ingress-nginx Repository](https://github.com/amiirsadeghi/Metallb-ingress-nginx)
